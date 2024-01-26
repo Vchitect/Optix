@@ -1,18 +1,19 @@
 # optix
 
-Optix: memory efficient stable diffusion training optimization framework
+Optix: Memory Efficient Training Framework for Large Video Generation Model
 
 **Features**:
-- 4x the batchsize when training with high resolution
+- 4x the batchsize when training with high resolution images
 - average 1.2x the training throughput
 - minimize the GPU memory required to train
 
-Results of training diffusers stable diffusion models：
+Results of training stable-diffusion models：
 
 ![max batchsize](./doc/imgs/sdto_bs.png)
 ![acc ratio](./doc/imgs/sdto_acc.png)
 
-*Basline config*：tf32, grad checkpointing, SDPA
+
+*Basline config*：tf32, grad checkpointing
 
 *Tested on*：A100 80GB; Pytorch2.1.2+cu118
 
