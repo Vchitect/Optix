@@ -1,11 +1,11 @@
-# optix
+# Optix
 
 Optix: Memory Efficient Training Framework for Large Video Generation Model
 
 **Features**:
 - 4x the batchsize when training with high resolution images
 - average 1.2x the training throughput
-- minimize the GPU memory required to train
+- Optix remains effective in DiT model training!
 
 Results of training stable-diffusion models：
 
@@ -29,7 +29,7 @@ Results of training stable-diffusion models：
 
 Refer to [requirements](./requiresments.txt)
 
-## API使用
+## API Usage
 
 ```py
 import optix
@@ -42,7 +42,11 @@ model, vae, opt, ema = optix.compile(model, vae, learning_rate=1e-5, weight_deca
 model, vae, opt, _ = optix.compile(model, vae, learning_rate=1e-5, weight_decay=1e-5)
 
 
-# 使用如下代码代替 model_input = vae.encode(model_input).latent_dist.sample().mul_(vae.config.scaling_factor)
+# use `sliced_vae` to replace the original vae.encode codes:
+# with torch.no_grad():
+#     x = vae.encode(x)
+#     if not args.use_video:
+#         x = x.latent_dist.sample().mul_(vae.config.scaling_factor)
 model_input = optix.sliced_vae(vae, model_input, use_autocast=True, nhwc=True)
 
 ```
@@ -74,6 +78,8 @@ model, vae, opt, _ = optix.compile(model, vae, learning_rate=1e-5, weight_decay=
 ```
 
 
-## stable diffusion 训练示例
+## training script demo
 
-[train_unet.py](./example/train_sd_unet.py)
+[Stable Diffusion train_sd_unet.py](./example/train_sd_unet.py)
+
+[DiT train_dit.py](./example/train_dit.py)

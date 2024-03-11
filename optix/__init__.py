@@ -91,7 +91,10 @@ def compile(model, vae, config=None, **kwargs):
     # optimizer setup
     optimizer_class=get_optimizer(config.optim)
     if config.hybrid_zero:
-        node_group = setup_node_groups()
+        if config.dp_group==None:
+            node_group = setup_node_groups()
+        else:
+            node_group = config.dp_group
         opt = ZeroRedundancyOptimizer(model.parameters(),
                                       optimizer_class=optimizer_class,
                                       lr=config.learning_rate,
@@ -105,7 +108,7 @@ def compile(model, vae, config=None, **kwargs):
 
     # ema config
     if config.use_ema:
-        ema = ShardedEMA(model)
+        ema = ShardedEMA(model, config.dp_group)
     else:
         ema = None
 

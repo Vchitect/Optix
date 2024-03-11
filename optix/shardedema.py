@@ -8,6 +8,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from .utils import partition_params
 
 class ShardedEMA():
+    """Shard the ema params across DDP group.
+    """
     def __init__(self, model, group=None) -> None:
         self.rank = dist.get_rank(group)
         self.group = group
@@ -35,7 +37,15 @@ class ShardedEMA():
     def state_dict_shard(self):
         return self.param_shard
 
-    def state_dict_cpu(self):
+    def state_dict(self):
+        """gather the sharded ema param across group to rank0
+
+        Note:
+            This needs to be call on all process, not only rank0!
+
+        Returns:
+            dict: the full state dict on rank0
+        """
         begin = time.time()
         state_dict = OrderedDict(self.named_buffers)
         for k in state_dict.keys():
@@ -51,19 +61,17 @@ class ShardedEMA():
                 if self.rank == rank:
                     src_p = self.param_shard[param_name]
                     dist.send(src_p.cuda(), 0, self.group)
-                    #print(f"send {param_name} from rank {rank} to 0")
                 if self.rank == 0:
                     recv_buffer = torch.empty_like(self.all_param_shards[rank][param_name])
                     dist.recv(recv_buffer, rank, self.group)
-                    #print(f"rank0 recv {param_name} from rank {rank}")
                     state_dict[param_name] = recv_buffer.cpu()
                 dist.barrier()
 
-        print(f"ShardedEMA state_dict_cpu time cost: {time.time()-begin} s")
+        print(f"ShardedEMA state_dict time cost: {time.time()-begin} s")
         return state_dict
 
     def verify_with_gt(self, gt_ema):
-        sd_ema_params = self.state_dict_cpu()
+        sd_ema_params = self.state_dict()
         if torch.distributed.get_rank()==0:
             for name, gt_param in gt_ema.named_parameters():
                 sd_param = sd_ema_params[name]
