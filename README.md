@@ -78,8 +78,8 @@ model, vae, opt, _ = optix.compile(model, vae, learning_rate=1e-5, weight_decay=
 ```
 
 
-## training script demo
+## Examples
 
-[Stable Diffusion train_sd_unet.py](./example/train_sd_unet.py)
+Stable Diffusion: [train_sd_unet.py](./example/train_sd_unet.py)
 
-[DiT train_dit.py](./example/train_dit.py)
+DiT:[train_dit.py](./example/train_dit.py)
