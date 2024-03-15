@@ -8,7 +8,8 @@ import torch.distributed as dist
 from .shardedema import ShardedEMA
 from .op_replace import replace_all_layernorms, replace_all_groupnorms
 from .utils import setup_node_groups, setup_distributed, enable_tf32
-from .sliced_vae import sliced_vae
+from .sliced_vae import sliced_vae, dp_vae
+from .dp_inference import dp_fwd
 
 def get_optimizer(opt_name:str):
     opt_map = {

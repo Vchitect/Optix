@@ -1,4 +1,6 @@
 import torch
+import torch.distributed as dist
+from time import perf_counter
 
 def partition_params(model, num_partitions, return_dict=False):
     """partitions params
@@ -62,8 +64,6 @@ def replace_all_module(model, if_replace_hook, get_new_module):
             replace_all_module(module, if_replace_hook, get_new_module)
     return model
 
-
-import torch.distributed as dist
 
 def setup_node_groups(num_per_node=8):
     """every node is build as a comm group
@@ -161,3 +161,19 @@ def print_once(msg):
 def enable_tf32():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
+
+
+class Timer:
+    def __init__(self, msg='') -> None:
+        self.msg=msg
+    def __enter__(self):
+
+        torch.cuda.synchronize()
+        self.start = perf_counter()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        torch.cuda.synchronize()
+        self.time = perf_counter() - self.start
+        self.readout = f'{self.msg} Exec Time: {self.time:.3f} seconds'
+        print(self.readout)
