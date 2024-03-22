@@ -13,4 +13,4 @@ from .sliced_vae import sliced_vae, dp_vae
 from .dp_inference import dp_fwd
 from .modules.mha import *
 from .sp_comm_utils import *
-from .frame_sequence_parallel import temporal2spatial, spatial2temporal
+from .frame_sequence_parallel import temporal2spatial, spatial2temporal, slice_encoder_states

@@ -34,3 +34,9 @@ def temporal2spatial(x, b, group=None):
     # b*s, f/np, d -> b*f/np, s, d
     out = rearrange(out, '(b s) f_p d -> (b f_p) s d', b=b).contiguous()
     return out
+
+def slice_encoder_states(x, group, dim=0):
+    ws = torch.distributed.get_world_size(group)
+    rank = torch.distributed.get_rank(group)
+    # return torch.
+    return torch.chunk(x, ws, dim=dim)[rank]

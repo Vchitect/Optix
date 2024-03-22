@@ -44,7 +44,7 @@ def sliced_vae(vae, model_input, micro_bs=None, use_autocast=False, nhwc=False):
             model_input = rearrange(model_input, '(b f) c h w -> b c f h w', b=b).contiguous()
     return model_input
 
-def dp_vae(vae, model_input, use_autocast=False, nhwc=False, group=None):
+def dp_vae(vae, model_input, use_autocast=False, nhwc=False, group=None, gather=True):
     input_dim = model_input.dim()
     # import pdb;pdb.set_trace()
     with torch.no_grad():

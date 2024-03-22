@@ -48,12 +48,17 @@ def get_valid_cfg(config, **kwargs):
 def compile(model, vae, config=None, **kwargs):
     # get a default config if None
     config = get_valid_cfg(config, **kwargs)
-    print("Optimization config:", config)
     torch._dynamo.config.suppress_errors = True
 
     # distribute setup
     if config.ddp and not dist.is_initialized():
         setup_distributed()
+
+    if dist.is_initialized():
+        if dist.get_rank()==0:
+            print("Optimization config:", config)
+    else:
+        print("Optimization config:", config)
 
     # vae optimization
     vae.requires_grad_(False)
