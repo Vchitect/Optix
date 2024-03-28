@@ -4,7 +4,10 @@ import time
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-
+from torch.distributed.fsdp import (
+    FullyShardedDataParallel as FSDP,
+    ShardingStrategy, MixedPrecision, StateDictType, FullStateDictConfig
+)
 from .utils import partition_params
 
 class ShardedEMA():
@@ -78,3 +81,37 @@ class ShardedEMA():
                 if not torch.equal(gt_param.cpu(), sd_param):
                     print(f"param {name} not equal, diff: ", (gt_param.cpu()-sd_param).sum())
                 assert torch.equal(gt_param.cpu(), sd_param)
+
+
+class FSDPEmaWrapper():
+    def __init__(self, ema) -> None:
+        self.fsdp_ema = ema
+
+    @torch.no_grad()
+    def update(self, model, decay=0.9999):
+        """
+        Step the EMA model towards the current model.
+        """
+        ema_params = OrderedDict(self.fsdp_ema.named_parameters())
+        model_params = OrderedDict(model.named_parameters())
+        assert set(ema_params.keys()) == set(model_params.keys())
+
+        for name, param in model_params.items():
+            # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
+            ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
+
+
+    def state_dict(self):
+        """get full state dict on rank0 cpu memory
+
+        Note:
+            This need to be called on all process!
+        """
+        with FSDP.state_dict_type(
+            self.fsdp_ema,
+            StateDictType.FULL_STATE_DICT,
+            FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
+        ):
+            consolidated_ema_state_dict = self.fsdp_ema.state_dict()
+        return consolidated_ema_state_dict
+
