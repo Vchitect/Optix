@@ -1,3 +1,6 @@
+import random
+
+import numpy as np
 import torch
 import torch.distributed as dist
 from time import perf_counter
@@ -177,3 +180,15 @@ class Timer:
         self.time = perf_counter() - self.start
         self.readout = f'{self.msg} Exec Time: {self.time:.3f} seconds'
         print(self.readout)
+
+def set_seed(seed: int = 1024):
+    """Sets seeds for all random libraries.
+
+    Args:
+        seed (int): seed for random states
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    assert torch.cuda.is_available()
+    torch.cuda.manual_seed(seed)

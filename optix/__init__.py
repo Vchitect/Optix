@@ -15,3 +15,4 @@ from .modules.mha import *
 from .sp_comm_utils import *
 from .frame_sequence_parallel import temporal2spatial, spatial2temporal, slice_encoder_states
 from .fsdp_wrappers import setup_fsdp_encoder,setup_fsdp_training
+from .dist import setup_dp_sp

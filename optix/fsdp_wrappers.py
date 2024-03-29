@@ -9,12 +9,12 @@ from torch.distributed.fsdp import (
 from torch.distributed.fsdp.wrap import lambda_auto_wrap_policy,size_based_auto_wrap_policy
 import torch.nn as nn
 
-def setup_fsdp_encoder(model: nn.Module, process_group=None, policy='size') -> FSDP:
+def setup_fsdp_encoder(model: nn.Module, process_group=None, policy='lambda') -> FSDP:
     if policy == 'size':
-        auto_wrap_policy = functools.partial(size_based_auto_wrap_policy, min_num_params=1e7)
+        auto_wrap_policy = functools.partial(size_based_auto_wrap_policy, min_num_params=1e8)
     elif policy == 'lambda':
         auto_wrap_policy = functools.partial(lambda_auto_wrap_policy,
-                                            lambda_fn=lambda m: m in list(model.layers),)
+                                            lambda_fn=lambda m: m in list(model.encoder.block),)
     model = FSDP(
         model,
         auto_wrap_policy= auto_wrap_policy,

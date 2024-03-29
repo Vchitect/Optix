@@ -3,3 +3,4 @@ torch>2.1
 apex
 einpos
 xformers
+TorchDistPackage
