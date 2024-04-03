@@ -45,8 +45,12 @@ def sliced_vae(vae, model_input, micro_bs=None, use_autocast=False, nhwc=False):
     return model_input
 
 def dp_vae(vae, model_input, use_autocast=False, nhwc=False, group=None, gather=True):
+    """ data parallel vae inference
+
+    Input: b f c h w
+    output: b c f h w
+    """
     input_dim = model_input.dim()
-    # import pdb;pdb.set_trace()
     with torch.no_grad():
         if input_dim == 5:
             b, _, _, _, _ = model_input.shape

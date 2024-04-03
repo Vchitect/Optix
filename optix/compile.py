@@ -97,7 +97,7 @@ def compile(model, vae, config=None, **kwargs):
 
     # optimizer setup
     optimizer_class=get_optimizer(config.optim)
-    if config.hybrid_zero:
+    if config.hybrid_zero and dist.get_world_size(config.dp_group)>1:
         if config.dp_group==None:
             node_group = setup_node_groups()
         else:

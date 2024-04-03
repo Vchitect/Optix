@@ -33,5 +33,7 @@ def setup_dp_sp(sp_size, dp_size=-1, set_sp_seed=True):
 
 def broadcast_input_sp(model_input):
     sp_group = tpc.get_group('sp')
+    if dist.get_world_size(sp_group) <=1:
+        return
     sp_rank0 = tpc.get_ranks_in_group('sp')[0]
     dist.broadcast(model_input, sp_rank0, sp_group)
