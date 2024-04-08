@@ -50,6 +50,8 @@ def dp_vae(vae, model_input, use_autocast=False, nhwc=False, group=None, gather=
     Input: b f c h w
     output: b c f h w
     """
+    if torch.distributed.get_world_size(group) <= 1:
+        return sliced_vae(vae, model_input, use_autocast=use_autocast, nhwc=nhwc)
     input_dim = model_input.dim()
     with torch.no_grad():
         if input_dim == 5:

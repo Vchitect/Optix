@@ -179,7 +179,7 @@ class Timer:
         torch.cuda.synchronize()
         self.time = perf_counter() - self.start
         self.readout = f'{self.msg} Exec Time: {self.time:.3f} seconds'
-        print(self.readout)
+        print(self.readout, flush=True)
 
 def set_seed(seed: int = 1024):
     """Sets seeds for all random libraries.
