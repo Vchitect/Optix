@@ -13,6 +13,8 @@ def auto_micro_bs(inp):
     else:
         h = inp.shape[2]
         w = inp.shape[3]
+    if h > 1000 and w> 1000:
+        return 1
     if h>700 and w>700:
         return 2
     elif h > 500 and w>500:
@@ -60,7 +62,7 @@ def dp_vae(vae, model_input, use_autocast=False, nhwc=False, group=None, gather=
             print_once("dp_vae received 5D input tensor, the first two dims will be treated as batch and frame")
 
         fwd_fn = functools.partial(sliced_vae, vae, nhwc=nhwc, use_autocast=use_autocast)
-        output = dp_fwd(fwd_fn, model_input, group=group)
+        output = dp_fwd(fwd_fn, model_input, group=group, gather=gather)
         if input_dim == 5:
             output = rearrange(output, '(b f) c h w -> b c f h w', b=b).contiguous()
         return output

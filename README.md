@@ -2,6 +2,10 @@
 
 Optix: Memory Efficient Training Framework for Large Video Generation Model
 
+**Update**:
+- support training [LATTE](https://github.com/Vchitect/Latte) with 320 frames of 512*512 video on A100 without sequence parallel; See [Latte training example](./example/train_latte_t2v.py)
+
+
 **Features**:
 - 4x the batchsize when training with high resolution images
 - average 1.2x the training throughput
@@ -16,7 +20,6 @@ Results of training stable-diffusion models：
 *Basline config*：tf32, grad checkpointing
 
 *Tested on*：A100 80GB; Pytorch2.1.2+cu118
-
 
 
 ## Getting started

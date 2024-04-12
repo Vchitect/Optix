@@ -165,23 +165,54 @@ def enable_tf32():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 
+def print_rank0(msg, group=dist.group.WORLD):
+    if dist.is_initialized():
+        if dist.get_rank(group)==0:
+            print(msg, flush=True)
+    else:
+        print(msg, flush=True)
+
+
+def show_mem(msg='', enable=True):
+    if not enable:
+        return
+    torch.cuda.synchronize()
+
+    printout = f"{msg} ;cur_mem={torch.cuda.memory_allocated()/1024**3:.1f}," \
+            f"max_mem={torch.cuda.max_memory_allocated()/1024**3:.1f}"
+    print_rank0(printout)
+
+
 
 class Timer:
-    def __init__(self, msg='') -> None:
-        self.msg=msg
-    def __enter__(self):
+    def __init__(self, msg='', rank0=True, memory=True) -> None:
+        self.msg = msg
+        self.rank0 = rank0
+        self.memory = memory
 
+    def __enter__(self):
         torch.cuda.synchronize()
+        # show_mem(msg='before ' + self.msg, enable=self.memory)
         self.start = perf_counter()
+        self.memory_begin = (torch.cuda.memory_allocated()/1024**3, torch.cuda.max_memory_allocated()/1024**3)
         return self
 
     def __exit__(self, type, value, traceback):
         torch.cuda.synchronize()
         self.time = perf_counter() - self.start
-        self.readout = f'{self.msg} Exec Time: {self.time:.3f} seconds'
-        print(self.readout, flush=True)
+        cur_memory = (torch.cuda.memory_allocated()/1024**3, torch.cuda.max_memory_allocated()/1024**3)
+        memory_change = (cur_memory[0] - self.memory_begin[0], cur_memory[1] - self.memory_begin[1])
+        self.readout = f'{self.msg} Exec Time: {self.time:.3f} s; ' \
+                       f'MemoryChange: alloc: {memory_change[0]:.1f}, max: {memory_change[1]:.1f}; '  \
+                       f'Current: alloc: {cur_memory[0]:.1f}, max: {cur_memory[1]:.1f}'
 
-def set_seed(seed: int = 1024):
+        if self.rank0:
+            print_rank0(self.readout)
+        else:
+            print(self.readout, flush=True)
+
+
+def set_seed(seed: int = 1024, fix_algo=False):
     """Sets seeds for all random libraries.
 
     Args:
@@ -192,3 +223,18 @@ def set_seed(seed: int = 1024):
     torch.manual_seed(seed)
     assert torch.cuda.is_available()
     torch.cuda.manual_seed(seed)
+
+
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.enabled = False
+    torch.random.manual_seed(seed)
+
+    if fix_algo:
+        torch.backends.cudnn.benchmark = False
+
+        # deterministic algos
+        # torch.use_deterministic_algorithms(True)
+
+        # cudnn conv deterministic
+        torch.backends.cudnn.deterministic = True

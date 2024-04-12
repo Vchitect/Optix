@@ -5,7 +5,7 @@ from torch.distributed.optim import ZeroRedundancyOptimizer
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 
-from .compile import compile,compile_dit
+from .compile import compile
 from .shardedema import ShardedEMA
 from .op_replace import replace_all_layernorms, replace_all_groupnorms
 from .utils import setup_node_groups, setup_distributed, enable_tf32

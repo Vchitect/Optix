@@ -8,7 +8,7 @@ from torch.distributed.fsdp import (
     FullyShardedDataParallel as FSDP,
     ShardingStrategy, MixedPrecision, StateDictType, FullStateDictConfig
 )
-from .utils import partition_params
+from .utils import partition_params, print_rank0
 
 class ShardedEMA():
     """Shard the ema params across DDP group.
@@ -70,7 +70,7 @@ class ShardedEMA():
                     state_dict[param_name] = recv_buffer.cpu()
                 dist.barrier()
 
-        print(f"ShardedEMA state_dict time cost: {time.time()-begin} s")
+        print_rank0(f"ShardedEMA state_dict time cost: {time.time()-begin:.2f} s")
         return state_dict
 
     def verify_with_gt(self, gt_ema):
