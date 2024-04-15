@@ -227,10 +227,10 @@ def set_seed(seed: int = 1024, fix_algo=False):
 
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.enabled = False
     torch.random.manual_seed(seed)
 
     if fix_algo:
+        torch.backends.cudnn.enabled = False
         torch.backends.cudnn.benchmark = False
 
         # deterministic algos
