@@ -11,8 +11,17 @@ from .op_replace import replace_all_layernorms, replace_all_groupnorms
 from .utils import setup_node_groups, setup_distributed, enable_tf32
 from .sliced_vae import sliced_vae, dp_vae
 from .dp_inference import dp_fwd
-from .modules.mha import *
 from .sp_comm_utils import *
 from .frame_sequence_parallel import temporal2spatial, spatial2temporal, slice_encoder_states
 from .fsdp_wrappers import setup_fsdp_encoder,setup_fsdp_training
-from .dist import setup_dp_sp,broadcast_input_sp
+
+try:
+    from .dist import setup_dp_sp,broadcast_input_sp
+except:
+    setup_dp_sp=None
+    broadcast_input_sp=None
+
+try:
+    from .modules.mha import MHA
+except:
+    MHA=None

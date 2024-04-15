@@ -13,8 +13,14 @@ def setup_fsdp_encoder(model: nn.Module, process_group=None, policy='lambda') ->
     if policy == 'size':
         auto_wrap_policy = functools.partial(size_based_auto_wrap_policy, min_num_params=1e8)
     elif policy == 'lambda':
+        if hasattr(model, 'encoder'):
+            lambda_fn = lambda m: m in list(model.encoder.block)
+        elif hasattr(model, 'layers'):
+            lambda_fn=lambda m: m in list(model.layers)
+        else:
+            raise NotImplementedError
         auto_wrap_policy = functools.partial(lambda_auto_wrap_policy,
-                                            lambda_fn=lambda m: m in list(model.encoder.block),)
+                                            lambda_fn=lambda_fn,)
     model = FSDP(
         model,
         auto_wrap_policy= auto_wrap_policy,

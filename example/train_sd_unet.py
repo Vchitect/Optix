@@ -17,7 +17,6 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import ShardingStrategy
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from torchdistpackage import setup_distributed_slurm
 import optix
 
 
@@ -88,7 +87,7 @@ def train(model, vae, batchsize=1, use_amp=True, h=512, w=512, is_xl=False,
     print(perf_times)
 
 enable_tf32()
-rank, world_size, port, addr=setup_distributed_slurm()
+rank, world_size, port, addr=optix.utils.setup_distributed()
 
 pretrained_model_name_or_path="stabilityai/stable-diffusion-xl-base-1.0"
 
