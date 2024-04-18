@@ -70,6 +70,10 @@ Keyword arguments for `optix.compile` and default value：
     'learning_rate': 1e-5,              # optimizer params
     'weight_decay': 0,                  # optimizer params
     'hybrid_zero': True,                # [PERF] for multi node training, hybrid zero can be faster
+    'fsdp': False,                      # If True, use FSDP instead of DDP
+    "fsdp_strategy": 'sdp',             # value range: [fsdp, sdp], fsdp for ZeRO3(fully-shard), sdp for ZeRO2;
+    "mix_precision_level": 1            # level of mixed precision, 1: torch amp; 2: 16bit with fp32 master param; 3: pure 16bit
+    "compute_dtype": torch.bfloat16,    # dtype of compute, valid when mix_precision_level = 2/3
 }
 ```
 These `Keyword arguments` can be directly passed to `optix.compile` like:

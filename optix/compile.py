@@ -9,7 +9,7 @@ import torch.distributed as dist
 from .shardedema import ShardedEMA,FSDPEmaWrapper
 from .op_replace import replace_all_layernorms, replace_all_groupnorms
 from .utils import setup_node_groups, setup_distributed, print_rank0, enable_tf32
-from .fsdp_wrappers import setup_fsdp_training, setup_fsdp_encoder
+from .fsdp_wrappers import setup_fsdp_training, setup_fsdp_encoder, setup_ddp_training
 
 def get_optimizer(opt_name:str):
     opt_map = {
@@ -36,7 +36,8 @@ def get_valid_cfg(config, **kwargs):
         'hybrid_zero': False,               # [PERF] for multi node training, hybrid zero can be faster
         'fsdp': False,
         "fsdp_strategy": 'sdp',
-        "model_dtype": torch.bfloat16
+        "compute_dtype": torch.bfloat16,
+        "mix_precision_level": 1             # level of mixed precision, 1: torch amp; 2: 16bit with fp32 master param; 3: pure 16bit
     }
     if kwargs:
         default_kwargs.update(kwargs)
@@ -63,7 +64,7 @@ def optimize_sd_vae(vae, config):
     return vae
 
 
-def compile(model, vae, config=None, **kwargs):
+def compile(model, vae, model_ema=None, config=None, **kwargs):
     # env settings
     enable_tf32()
     torch._dynamo.config.suppress_errors = True
@@ -93,17 +94,24 @@ def compile(model, vae, config=None, **kwargs):
     ema = None
     if dist.is_initialized() and dist.get_world_size() > 1:
         if config.fsdp:
+            fsdp_args = {
+                'compute_dtype': config.compute_dtype,
+                'strategy': config.fsdp_strategy,
+            }
             if config.use_ema:
-                model = model.cpu()
-                model_ema = copy.deepcopy(model)
-                model.to(config.model_dtype)
-                model_ema.to(config.model_dtype)
-                fsdp_args = {
-                    'strategy': config.fsdp_strategy,
-                }
-                ema = setup_fsdp_training(model_ema, process_group=config.dp_group, **fsdp_args)
+                if model_ema is None:
+                    model = model.cpu()
+                    model_ema = copy.deepcopy(model)
+                # ema only need to update param, the dtype should be fixed to 16bit or fp32
+                ema_dtype = config.compute_dtype if config.mix_precision_level==3 else torch.float32
+                ema = setup_fsdp_training(model_ema, process_group=config.dp_group,
+                                          mix_precision_level=3, compute_dtype = ema_dtype,
+                                          strategy=config.fsdp_strategy)
                 ema = FSDPEmaWrapper(ema)
-            model = setup_fsdp_training(model, process_group=config.dp_group, **fsdp_args)
+
+            model = setup_fsdp_training(model, process_group=config.dp_group, verbose=True,
+                                        mix_precision_level=config.mix_precision_level,
+                                        **fsdp_args)
             opt = optimizer_class(model.parameters(), lr=config.learning_rate,
                               weight_decay=config.weight_decay, fused=True)
         else:
@@ -112,10 +120,11 @@ def compile(model, vae, config=None, **kwargs):
             else:
                 zero_group = config.dp_group
 
-            model=model.to(config.model_dtype).cuda()
+            model = setup_ddp_training(model, process_group=config.dp_group,
+                                       mix_precision_level=config.mix_precision_level,
+                                       compute_dtype = config.compute_dtype)
             if config.use_ema:
                 ema = ShardedEMA(model, config.dp_group)
-            model = DDP(model, process_group=config.dp_group, gradient_as_bucket_view=True)
             opt = ZeroRedundancyOptimizer(model.parameters(),
                                         optimizer_class=optimizer_class,
                                         lr=config.learning_rate,
@@ -124,7 +133,7 @@ def compile(model, vae, config=None, **kwargs):
                                         parameters_as_bucket_view=False,
                                         fused=True)
     else:
-        model=model.to(config.model_dtype).cuda()
+        model=model.to(config.compute_dtype).cuda()
         if config.use_ema:
             ema = ShardedEMA(model, config.dp_group)
         opt = optimizer_class(model.parameters(), lr=config.learning_rate,
