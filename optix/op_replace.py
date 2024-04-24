@@ -7,10 +7,11 @@ except ImportError as e:
     except ImportError as e:
         FusedLayerNorm = None
 
+from .utils import print_rank0
 
 def replace_all_layernorms(model):
     if FusedLayerNorm is None:
-        print("WARNING: apex.normalization & xformers.triton.FusedLayerNorm is not found, \
+        print_rank0("WARNING: apex.normalization & xformers.triton.FusedLayerNorm is not found, \
               skip using FusedLayerNorm")
         return model
     for name, module in model.named_children():
@@ -26,7 +27,7 @@ def replace_all_groupnorms(model):
     try:
         from apex.contrib.group_norm import GroupNorm
     except ImportError as e:
-        print("WARNING: apex.contrib.group_norm is not found, skip using apex groupnorm")
+        print_rank0("WARNING: apex.contrib.group_norm is not found, skip using apex groupnorm")
         return model
     for name, module in model.named_children():
         if isinstance(module, torch.nn.GroupNorm):
